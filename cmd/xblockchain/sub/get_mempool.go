@@ -18,7 +18,7 @@ var (
 
 func runGetMEMPool(_ *cobra.Command,_ []string) error {
 
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *[]xblockchain.Transaction = nil
 	err := cli.CallMethod(1,"Miner.ListTXPendingPool",nil,&r)
 	if err != nil {

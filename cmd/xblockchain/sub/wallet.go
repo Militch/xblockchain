@@ -50,7 +50,7 @@ type walletResp struct {
 	Address string `json:"address"`
 }
 func runWalletNew() error {
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var addr *string = nil
 	err := cli.CallMethod(1,"Wallet.New",nil,&addr)
 	if err != nil {
@@ -69,7 +69,7 @@ func runWalletDel(cmd *cobra.Command,args []string) error {
 	addrq := &walletReq{
 		Address: addr,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *interface{} = nil
 	err := cli.CallMethod(1,"Wallet.Del",addrq,&r)
 	if err != nil {
@@ -88,7 +88,7 @@ func runWalletExport(cmd *cobra.Command,args []string) error {
 	addrq := &walletReq{
 		Address: addr,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *string = nil
 	err := cli.CallMethod(1,"Wallet.ExportByAddress",addrq,&r)
 	if err != nil {
@@ -107,7 +107,7 @@ func runWalletImport(cmd *cobra.Command,args []string) error {
 	importrq := &walletImportReq{
 		PrivateKey: addr,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *string = nil
 	err := cli.CallMethod(1,"Wallet.ImportByPrivateKey",importrq,&r)
 	if err != nil {
@@ -120,7 +120,7 @@ func runWalletImport(cmd *cobra.Command,args []string) error {
 
 func runWalletList() error {
 	var defAddr *string = nil
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	err := cli.CallMethod(1,"Wallet.GetDefaultAddress",nil,&defAddr)
 	if err != nil {
 		fmt.Println(err.Error())

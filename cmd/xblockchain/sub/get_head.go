@@ -12,7 +12,7 @@ var (
 	}
 )
 func runGetHead(cmd *cobra.Command,args []string) error {
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *string = nil
 	err := cli.CallMethod(1,"Chain.LastBlockHash",nil,&r)
 	if err != nil {

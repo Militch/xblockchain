@@ -25,7 +25,7 @@ func runGetBalance(cmd *cobra.Command,args []string) error {
 	addrq := &addressReq{
 		Address: addr,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *uint64 = nil
 	err := cli.CallMethod(1,"Chain.GetBalance",addrq,&r)
 	if err != nil {

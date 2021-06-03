@@ -38,7 +38,7 @@ func runTransfer(cmd *cobra.Command,args []string) error {
 		To: toAddr,
 		Value: value,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *xblockchain.Transaction = nil
 	err := cli.CallMethod(1,"Transaction.SendTransaction",arg,&r)
 	if err != nil {

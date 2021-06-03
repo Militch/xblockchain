@@ -23,7 +23,7 @@ func runGetTx(cmd *cobra.Command,args []string) error {
 		return cmd.Help()
 	}
 	idStr := args[0]
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	reqArgs := &api.GetTransactionArgs{
 		Id: idStr,
 	}

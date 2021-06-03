@@ -27,7 +27,7 @@ var (
 )
 
 func runMinerStart(_ *cobra.Command, _ []string) error {
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *interface{} = nil
 	err := cli.CallMethod(1,"Miner.Start",nil,&r)
 	if err != nil {
@@ -39,7 +39,7 @@ func runMinerStart(_ *cobra.Command, _ []string) error {
 }
 
 func runMinerStop(_ *cobra.Command, _ []string) error {
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *interface{} = nil
 	err := cli.CallMethod(1,"Miner.Stop",nil,&r)
 	if err != nil {

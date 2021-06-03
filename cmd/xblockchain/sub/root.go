@@ -6,6 +6,30 @@ import (
 	"os"
 )
 
+//var (
+//	RPCListenAddress = ":9002"
+//	ClientAPIAddress = "http://127.0.0.1:9002"
+//	P2PListenAddress = ":9001"
+//	BlockDbPath = "./data0/blocks"
+//	KeyStoragePath = "./data0/keys"
+//	P2PBootstraps = []string{}
+//)
+//var (
+//	RPCListenAddress = ":9004"
+//	ClientAPIAddress = "http://127.0.0.1:9004"
+//	P2PListenAddress = ":9003"
+//	BlockDbPath = "./data1/blocks"
+//	KeyStoragePath = "./data1/keys"
+//	P2PBootstraps = []string{"127.0.0.1:9001"}
+//)
+var (
+	RPCListenAddress = ":9006"
+	ClientAPIAddress = "http://127.0.0.1:9006"
+	P2PListenAddress = ":9005"
+	BlockDbPath = "./data2/blocks"
+	KeyStoragePath = "./data2/keys"
+	P2PBootstraps = []string{"127.0.0.1:9001"}
+)
 var (
 	cfgFile     string
 	rootCmd = &cobra.Command{

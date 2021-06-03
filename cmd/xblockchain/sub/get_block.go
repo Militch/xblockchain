@@ -26,7 +26,7 @@ func runGetBlock(cmd *cobra.Command,args []string) error {
 	blockrq := &blockReq{
 		Hash: hash,
 	}
-	cli := rpc.NewClient("http://localhost:9005")
+	cli := rpc.NewClient(ClientAPIAddress)
 	var r *xblockchain.Block = nil
 	err := cli.CallMethod(1,"Chain.GetBlockByHash",blockrq,&r)
 	if err != nil {

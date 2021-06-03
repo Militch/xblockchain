@@ -1,18 +1,21 @@
 package node
 
-import "testing"
+import (
+	"os"
+	"os/signal"
+	"testing"
+)
 
-//func TestListenAndServe(t *testing.T) {
-//	err := ListenAndServe("0.0.0.0:9001")
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//}
-
-func TestNode_ListenAndServe(t *testing.T) {
-	n := NewNode("0.0.0.0:9001","")
-	err := n.ListenAndServe()
+func TestNode_Start(t *testing.T) {
+	n,err := New()
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = n.Start()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
 }
