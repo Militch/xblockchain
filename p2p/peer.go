@@ -8,6 +8,13 @@ import (
 
 type Peer struct {
 	wc chan targetWrite
+	// 读取错误通道
+	readErrCh chan error
+	// 协议错误通道
+	protocolHandleErrCh chan error
+	// 丢失链接错误通道
+	losePeerErrCh chan error
+	closeCh chan struct{}
 	ID noise.ID
 	messageCh chan Message
 	protocolMsgCh chan Message
@@ -22,6 +29,10 @@ func newPeer(wc chan targetWrite, id noise.ID) *Peer {
 		ID: id,
 		messageCh: make(chan Message),
 		protocolMsgCh: make(chan Message),
+		readErrCh: make(chan error),
+		protocolHandleErrCh: make(chan error),
+		losePeerErrCh: make(chan error),
+		closeCh: make(chan struct{}),
 	}
 	return p
 }
@@ -30,18 +41,34 @@ func (p *Peer) run(callFn func(peer *Peer) error) error {
 	go p.readLoop()
 	go p.pingLoop()
 	go func() {
-		if err := callFn(p); err != nil{
-			logrus.Error(err)
+		if err := callFn(p); err != nil {
+			p.protocolHandleErrCh <- err
 		}
 	}()
-	return nil
+	for  {
+		select {
+		case err := <-p.readErrCh:
+			p.closeCh <- struct{}{}
+			return err
+		case err := <-p.protocolHandleErrCh:
+			p.closeCh <- struct{}{}
+			return err
+		case err := <-p.losePeerErrCh:
+			p.closeCh <- struct{}{}
+			return err
+		}
+	}
 }
 
 func (p *Peer) readLoop() {
 	for {
-		msg := <- p.messageCh
-		if err := p.handle(msg); err != nil {
-			logrus.Error(err)
+		select {
+		case msg := <-p.messageCh:
+			if err := p.handle(msg); err != nil {
+				p.readErrCh <- err
+			}
+		case <-p.closeCh:
+			return
 		}
 	}
 }
@@ -49,7 +76,7 @@ func (p *Peer) readLoop() {
 func (p *Peer) handle(msg Message)  error {
 	switch msg.Header.MsgCode {
 	case MsgCodePing:
-		logrus.Infof("pong")
+		// 心跳包回复
 		if err := SendMsg(p, MsgCodePong,nil); err != nil {
 			return err
 		}
@@ -60,10 +87,16 @@ func (p *Peer) handle(msg Message)  error {
 }
 
 func (p *Peer) pingLoop() {
-	for range time.Tick(10000 * time.Millisecond) {
-		logrus.Infof("peer ping loop target: %s", p.ID.Address)
-		if err := SendMsg(p, MsgCodePing,nil); err != nil {
-			logrus.Error(err)
+	tick := time.Tick(10000 * time.Millisecond)
+	for {
+		select {
+		case <-p.closeCh:
+			return
+		case <-tick:
+			logrus.Infof("peer ping loop target: %s", p.ID.Address)
+			if err := SendMsg(p, MsgCodePing,nil); err != nil {
+				p.losePeerErrCh <- err
+			}
 		}
 	}
 }

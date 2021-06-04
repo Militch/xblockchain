@@ -1,6 +1,7 @@
 package backend
 
 import (
+	"github.com/perlin-network/noise"
 	"github.com/sirupsen/logrus"
 	"time"
 	"xblockchain"
@@ -10,7 +11,7 @@ import (
 type handler struct {
 	handlerCallFn func(peer *p2p.Peer) error
 	newPeerCh chan *peer
-	peers map[string] *peer
+	peers map[noise.PublicKey] *peer
 	blockchain *xblockchain.BlockChain
 	version uint32
 	network uint32
@@ -20,7 +21,7 @@ type handler struct {
 func newHandler(bc *xblockchain.BlockChain, pv uint32, nv uint32) (*handler,error) {
 	h := &handler{
 		newPeerCh: make(chan *peer, 1),
-		peers: make(map[string] *peer),
+		peers: make(map[noise.PublicKey] *peer),
 		blockchain: bc,
 		version: pv,
 		network: nv,
@@ -42,7 +43,8 @@ func (h *handler) handle(p *peer) error {
 	}
 	logrus.Infof("Handshake cuccess---")
 	id := p.p2p().ID
-	h.peers[id.Address] = p
+	h.peers[id.ID] = p
+	defer delete(h.peers, id.ID)
 	for {
 		if err := h.handleMsg(p); err!= nil {
 			return err

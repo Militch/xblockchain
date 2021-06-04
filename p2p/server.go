@@ -20,9 +20,10 @@ type Server struct {
 	running bool
 	addPeerCh chan noise.ID
 	runPeerCh chan noise.ID
+	delPeerCh chan noise.ID
 	targetWriteCh chan targetWrite
 	PeerHandlerFn func(peer *Peer) error
-	peers map[string]*Peer
+	peers map[noise.PublicKey]*Peer
 }
 
 type targetWrite struct {
@@ -38,8 +39,9 @@ func (srv *Server) Start() error {
 	}
 	srv.running = true
 	srv.addPeerCh = make(chan noise.ID)
+	srv.delPeerCh = make(chan noise.ID)
 	srv.targetWriteCh = make(chan targetWrite)
-	srv.peers = make(map[string]*Peer)
+	srv.peers = make(map[noise.PublicKey]*Peer)
 	// 初始化本地节点
 	if err := srv.setupLocalNode(); err != nil {
 		return err
@@ -59,15 +61,13 @@ func (srv *Server) setupLocalNode() error {
 	var addr *net.TCPAddr = nil
 	if srv.ListenAddr != "" {
 		if addr,err = net.ResolveTCPAddr(
-			"tcp",
-			srv.ListenAddr); err != nil {
+			"tcp", srv.ListenAddr); err != nil {
 			return err
 		}
 	}
 	if addr == nil {
 		if addr,err = net.ResolveTCPAddr(
-			"tcp",
-			"0.0.0.0:9066"); err != nil {
+			"tcp", "0.0.0.0:9066"); err != nil {
 			return err
 		}
 	}
@@ -89,7 +89,7 @@ func (srv *Server) handleOverlayOnPeerAdmitted(id noise.ID) {
 }
 
 func (srv *Server) handleOverlayOnPeerEvicted(id noise.ID) {
-
+	srv.delPeerCh <- id
 }
 
 func (srv *Server) handleP2PMessage(ctx noise.HandlerContext) error  {
@@ -97,7 +97,11 @@ func (srv *Server) handleP2PMessage(ctx noise.HandlerContext) error  {
 		return nil
 	}
 	id := ctx.ID()
-	p := srv.peers[id.Address]
+	p := srv.peers[id.ID]
+	if p == nil {
+		logrus.Warnf("peer not found1")
+		return nil
+	}
 	if err := p.handleData(ctx.Data()); err != nil {
 		return err
 	}
@@ -124,25 +128,34 @@ func (srv *Server) bootstrap() {
 
 
 func (srv *Server) run() {
-	// 监听通道消息
 	for {
 		select {
-		case id := <-srv.addPeerCh:
-			p := newPeer(srv.targetWriteCh, id)
-			srv.peers[id.Address] = p
-			logrus.Infof("ddd....")
+		case p := <-srv.addPeerCh:
+			// 新节点加入
+			np := newPeer(srv.targetWriteCh, p)
+			srv.peers[p.ID] = np
 			if srv.PeerHandlerFn == nil {
 				return
 			}
-			logrus.Infof("laile....")
-			if err := p.run(srv.PeerHandlerFn); err != nil {
-				logrus.Error("run msg err")
-			}
+			go func() {
+				if err := np.run(srv.PeerHandlerFn); err != nil {
+					srv.delPeerCh <- p
+				}
+			}()
 		case tw := <-srv.targetWriteCh:
-			addr := tw.target.Address
-			if err := srv.p2pNode.Send(context.Background(), addr, tw.data); err!=nil {
-				logrus.Warnf("send msg err: %s\n",err )
+			// 目标写通道
+			target := tw.target
+			if srv.peers[target.ID] == nil {
+				logrus.Warnf("peer not found2")
+				break
 			}
+			if err := srv.p2pNode.Send(context.Background(), target.Address, tw.data); err!=nil {
+				srv.delPeerCh <- tw.target
+			}
+		case id := <-srv.delPeerCh:
+			logrus.Infof("node exit: %s", id.Address)
+			// 节点删除通道
+			delete(srv.peers, id.ID)
 		}
 	}
 }

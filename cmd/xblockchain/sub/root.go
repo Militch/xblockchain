@@ -5,7 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 )
-
+//
 //var (
 //	RPCListenAddress = ":9002"
 //	ClientAPIAddress = "http://127.0.0.1:9002"
@@ -16,26 +16,26 @@ import (
 //	ProtocolVersion = uint32(0)
 //	NetworkID = uint32(0)
 //)
-//var (
-//	RPCListenAddress = ":9004"
-//	ClientAPIAddress = "http://127.0.0.1:9004"
-//	P2PListenAddress = ":9003"
-//	BlockDbPath = "./data1/blocks"
-//	KeyStoragePath = "./data1/keys"
-//	P2PBootstraps = []string{"127.0.0.1:9001"}
-//	ProtocolVersion = uint32(0)
-//	NetworkID = uint32(0)
-//)
 var (
-	RPCListenAddress = ":9006"
-	ClientAPIAddress = "http://127.0.0.1:9006"
-	P2PListenAddress = ":9005"
-	BlockDbPath = "./data2/blocks"
-	KeyStoragePath = "./data2/keys"
+	RPCListenAddress = ":9004"
+	ClientAPIAddress = "http://127.0.0.1:9004"
+	P2PListenAddress = ":9003"
+	BlockDbPath = "./data1/blocks"
+	KeyStoragePath = "./data1/keys"
 	P2PBootstraps = []string{"127.0.0.1:9001"}
 	ProtocolVersion = uint32(0)
-	NetworkID = uint32(1)
+	NetworkID = uint32(0)
 )
+//var (
+//	RPCListenAddress = ":9006"
+//	ClientAPIAddress = "http://127.0.0.1:9006"
+//	P2PListenAddress = ":9005"
+//	BlockDbPath = "./data2/blocks"
+//	KeyStoragePath = "./data2/keys"
+//	P2PBootstraps = []string{"127.0.0.1:9001"}
+//	ProtocolVersion = uint32(0)
+//	NetworkID = uint32(1)
+//)
 var (
 	cfgFile     string
 	rootCmd = &cobra.Command{
