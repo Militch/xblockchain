@@ -17,42 +17,44 @@ type Backend struct {
 	p2pServer *p2p.Server
 	txPendingPool *xblockchain.TXPendingPool
 	wallets *xblockchain.Wallets
-	blockChain *xblockchain.BlockChain
 	miner *xblockchain.Miner
 }
 type Opts struct {
 	BlockDbPath string
 	KeyStoragePath string
+	Version uint32
+	Network uint32
 }
 func NewBackend(stack *node.Node, opts *Opts) (*Backend,error) {
 	var err error = nil
-	backend := &Backend{
+	back := &Backend{
 		txPool: make(chan string),
 		p2pServer: stack.P2PServer(),
 	}
-	backend.blockDb = badger.New(opts.BlockDbPath)
-	backend.keysDb = badger.New(opts.KeyStoragePath)
-	backend.txPendingPool = xblockchain.NewTXPendingPool(100)
+	back.blockDb = badger.New(opts.BlockDbPath)
+	back.keysDb = badger.New(opts.KeyStoragePath)
+	back.txPendingPool = xblockchain.NewTXPendingPool(100)
 	genesisOpts := xblockchain.DefaultGenesisBlockOpts()
-	if backend.blockChain ,err = xblockchain.NewBlockChain(
-		genesisOpts, backend.blockDb); err != nil {
+	if back.blockchain ,err = xblockchain.NewBlockChain(
+		genesisOpts, back.blockDb); err != nil {
 		return nil, err
 	}
-	backend.wallets = xblockchain.NewWallets(backend.keysDb)
-	backend.miner = xblockchain.NewMiner(backend.blockchain, backend.wallets, backend.txPendingPool)
+	back.wallets = xblockchain.NewWallets(back.keysDb)
+	back.miner = xblockchain.NewMiner(back.blockchain, back.wallets, back.txPendingPool)
 
 	if err = stack.RegisterBackend(
-		backend.blockchain,backend.miner, backend.wallets,
-		backend.txPendingPool); err != nil {
+		back.blockchain,back.miner, back.wallets,
+		back.txPendingPool); err != nil {
 		return nil, err
 	}
 
-	if backend.handler, err = newHandler(); err != nil {
+	if back.handler, err = newHandler(back.blockchain,
+		opts.Version, opts.Network); err != nil {
 		return nil, err
 	}
-	callFn := backend.handler.handlerCallFn
-	backend.p2pServer.PeerHandlerFn = callFn
-	return backend, nil
+	callFn := back.handler.handlerCallFn
+	back.p2pServer.PeerHandlerFn = callFn
+	return back, nil
 }
 
 func (b *Backend) Start() error {

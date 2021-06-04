@@ -20,6 +20,8 @@ func TestStartNodeAndBackend(t *testing.T) {
 	if back, err = backend.NewBackend(stack, &backend.Opts{
 		BlockDbPath: "./data0/blocks",
 		KeyStoragePath: "./data0/keys",
+		Version: uint32(0),
+		Network: uint32(0),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -44,6 +46,8 @@ func TestStartNodeAndBackend3(t *testing.T) {
 	if back, err = backend.NewBackend(stack, &backend.Opts{
 		BlockDbPath: "./data1/blocks",
 		KeyStoragePath: "./data1/keys",
+		Version: uint32(0),
+		Network: uint32(0),
 	}); err != nil {
 		t.Fatal(err)
 	}

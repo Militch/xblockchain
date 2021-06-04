@@ -38,7 +38,6 @@ func UnmarshalMsg(bs []byte, msgp *Message) error {
 	return nil
 }
 
-
 func (m Message) String() string {
 	var bs []byte = nil
 	var err error = nil
@@ -76,6 +75,25 @@ func SendMsg(peer *Peer, msgCode uint32, data []byte) error {
 	}
 	var err error = nil
 	var bs []byte = nil
+	if bs, err = msg.MarshalMsg(); err != nil {
+		return err
+	}
+	peer.sendData(bs)
+	return nil
+}
+func SendMsgJSONData(peer *Peer, msgCode uint32, data interface{}) error {
+	var err error = nil
+	var bs []byte = nil
+	if bs, err = json.Marshal(data); err != nil {
+		return err
+	}
+	msg := &Message{
+		Header: &Header{
+			Version: DefaultVersion,
+			MsgCode: msgCode,
+		},
+		Body: bs,
+	}
 	if bs, err = msg.MarshalMsg(); err != nil {
 		return err
 	}

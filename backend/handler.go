@@ -1,7 +1,9 @@
 package backend
 
 import (
+	"github.com/sirupsen/logrus"
 	"time"
+	"xblockchain"
 	"xblockchain/p2p"
 )
 
@@ -9,28 +11,36 @@ type handler struct {
 	handlerCallFn func(peer *p2p.Peer) error
 	newPeerCh chan *peer
 	peers map[string] *peer
+	blockchain *xblockchain.BlockChain
+	version uint32
+	network uint32
 }
 
 
-func newHandler() (*handler,error) {
+func newHandler(bc *xblockchain.BlockChain, pv uint32, nv uint32) (*handler,error) {
 	h := &handler{
 		newPeerCh: make(chan *peer, 1),
 		peers: make(map[string] *peer),
+		blockchain: bc,
+		version: pv,
+		network: nv,
 	}
 	h.handlerCallFn = h.handleNewPeer
 	return h, nil
 }
 
 func (h *handler) handleNewPeer(p2p *p2p.Peer) error {
-	p := newPeer(p2p)
+	p := newPeer(p2p, h.version, h.network)
 	h.newPeerCh <- p
 	return h.handle(p)
 }
 
 func (h *handler) handle(p *peer) error {
-	if err := p.Handshake(); err != nil {
+	head := h.blockchain.GetLastBlockHash()
+	if err := p.Handshake(head); err != nil {
 		return err
 	}
+	logrus.Infof("Handshake cuccess---")
 	id := p.p2p().ID
 	h.peers[id.Address] = p
 	for {

@@ -31,6 +31,8 @@ func runDaemon() error {
 	if back, err = backend.NewBackend(stack, &backend.Opts{
 		BlockDbPath: BlockDbPath,
 		KeyStoragePath: KeyStoragePath,
+		Version: ProtocolVersion,
+		Network: NetworkID,
 	}); err != nil {
 		return err
 	}

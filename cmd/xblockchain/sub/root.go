@@ -13,6 +13,8 @@ import (
 //	BlockDbPath = "./data0/blocks"
 //	KeyStoragePath = "./data0/keys"
 //	P2PBootstraps = []string{}
+//	ProtocolVersion = uint32(0)
+//	NetworkID = uint32(0)
 //)
 //var (
 //	RPCListenAddress = ":9004"
@@ -21,6 +23,8 @@ import (
 //	BlockDbPath = "./data1/blocks"
 //	KeyStoragePath = "./data1/keys"
 //	P2PBootstraps = []string{"127.0.0.1:9001"}
+//	ProtocolVersion = uint32(0)
+//	NetworkID = uint32(0)
 //)
 var (
 	RPCListenAddress = ":9006"
@@ -29,6 +33,8 @@ var (
 	BlockDbPath = "./data2/blocks"
 	KeyStoragePath = "./data2/keys"
 	P2PBootstraps = []string{"127.0.0.1:9001"}
+	ProtocolVersion = uint32(0)
+	NetworkID = uint32(1)
 )
 var (
 	cfgFile     string
