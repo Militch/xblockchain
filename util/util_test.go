@@ -39,7 +39,9 @@ func TestStartNodeAndBackend3(t *testing.T) {
 	if stack, err = node.New(&node.Opts{
 		P2PListenAddress: ":9003",
 		RPCListenAddress: ":9004",
-		P2PBootstraps: []string{},
+		P2PBootstraps: []string{
+			"127.0.0.1:9001",
+		},
 	}); err != nil {
 		t.Fatal(err)
 	}

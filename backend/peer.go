@@ -56,17 +56,15 @@ func (p *peer) Handshake(head *uint256.UInt256) error {
 			switch msgCode {
 			case MsgCodeVersion:
 				bodyBs := msg.Body
+				logrus.Warnf("bs: %v", bodyBs)
 				var status *statusData = nil
-				if err := json.Unmarshal(bodyBs,status); err != nil {
-					logrus.Warnf("json Unmarshal err %s", err)
+				if err := json.Unmarshal(bodyBs,&status); err != nil {
 					return errors.New("error")
 				}
 				if status.Version != p.version {
-					logrus.Warnf("version not match: %d", status.Version)
 					return errors.New("error")
 				}
 				if status.Network != p.network {
-					logrus.Warnf("network not match: %d", status.Version)
 					return errors.New("error")
 				}
 				p.head = *status.Head

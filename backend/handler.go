@@ -2,7 +2,6 @@ package backend
 
 import (
 	"github.com/perlin-network/noise"
-	"github.com/sirupsen/logrus"
 	"time"
 	"xblockchain"
 	"xblockchain/p2p"
@@ -41,7 +40,6 @@ func (h *handler) handle(p *peer) error {
 	if err := p.Handshake(head); err != nil {
 		return err
 	}
-	logrus.Infof("Handshake cuccess---")
 	id := p.p2p().ID
 	h.peers[id.ID] = p
 	defer delete(h.peers, id.ID)
