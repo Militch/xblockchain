@@ -71,6 +71,8 @@ func (bcdb *blockChainDB) setLastBlockHash(hash *uint256.UInt256) error {
 	return bcdb.storage.Set("l",hash.ToBytes())
 }
 
+
+
 func NewBlockChain(opts *GenesisBlockOpts,storage *badger.Storage) (*BlockChain,error) {
 	db:= newBlockChainDB(storage)
 	lastBlockHash := db.getLastBlockHash()
@@ -151,6 +153,11 @@ func (blockChain *BlockChain) GetBlockById(id uint64) (*Block,error) {
 		}
 	}
 	return nil,fmt.Errorf("not found")
+}
+
+func (blockChain *BlockChain) GetHeadBlock() (*Block,error) {
+	headHash := blockChain.GetLastBlockHash()
+	return blockChain.GetBlockByHash(headHash)
 }
 
 func (blockChain *BlockChain) GetLastBlockHash() *uint256.UInt256 {
@@ -370,6 +377,7 @@ func (blockChain *BlockChain) GetBalanceOfAddress(address string) (uint64,error)
 	}
 	return balance,nil
 }
+
 
 //func (blockChain *BlockChain) GetTransaction(id string) (uint64,error) {
 //	pubKeyHash := ParsePubKeyHashByAddress(address)
