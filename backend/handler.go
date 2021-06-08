@@ -53,6 +53,7 @@ func (h *handler) handle(p *peer) error {
 func  (h *handler) handleMsg(p *peer) error {
 	msg := <-p.p2pPeer.GetProtocolMsgCh()
 	msgCode := msg.Header.MsgCode
+	//TODO: 这里处理P2P链路消息
 	switch msgCode {
 	case NewBlockMsg:
 		// 处理区块广播
@@ -73,11 +74,15 @@ func (h *handler) syncer() {
 			}
 			go h.synchronise(h.basePeer())
 		case <-forceSync:
+			// 强制同步
 			go h.synchronise(h.basePeer())
 		}
 	}
 }
 func (h *handler) basePeer() *peer {
+	for _, v := range h.peers {
+		return v
+	}
 	return nil
 }
 
@@ -85,6 +90,11 @@ func (h *handler) synchronise(p *peer) {
 	if p == nil {
 		return
 	}
+	//TODO: 这里处理链路同步
+	// 1. 寻找共同父块
+	// 2. 确定同步区间
+	// 3. 下载区块头、区块体，并持久化存储
+
 }
 func (h *handler) Start() {
 	go h.syncer()
