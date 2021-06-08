@@ -6,16 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"go/token"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/rpc"
 	"reflect"
 	"strings"
+	configs "xblockchain/cmd/config"
 	errors2 "xblockchain/rpc/errors"
-
-	"github.com/gorilla/websocket"
 )
 
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
@@ -182,7 +180,7 @@ func (server *ServerStarter) register(rcvr interface{}, name string, useName boo
 	return nil
 }
 
-func perParseRequestData(c *http.Request) (map[string]interface{}, error) {
+func PerParseRequestData(c *http.Request) (map[string]interface{}, error) {
 	if "POST" != c.Method {
 		return nil, errors.New("POST method excepted")
 	}
@@ -203,8 +201,8 @@ func perParseRequestData(c *http.Request) (map[string]interface{}, error) {
 	return data, nil
 }
 
-func (server *ServerStarter) handleJsonRPCRequest(data map[string]interface{}) (*int, interface{}, error) {
-	// data, err := perParseRequestData(c)
+func (server *ServerStarter) HandleJsonRPCRequest(data map[string]interface{}) (*int, interface{}, error) {
+
 	if len(data) == 0 || data != nil {
 		return nil, nil, errors2.New(-32700, "Parse error")
 	}
@@ -237,77 +235,53 @@ func (server *ServerStarter) handleJsonRPCRequest(data map[string]interface{}) (
 	return &id, result, nil
 }
 
-var upGrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+type RpcServer struct {
+	common *ServerStarter
 }
 
-func (server *ServerStarter) Run(addr string) error {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+func (entity RpcServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	resJson := make(map[string]interface{})
+	data, err := PerParseRequestData(r)
 
-		if r.Method != "POST" {
-			ws, err := upGrader.Upgrade(w, r, nil)
-			if err != nil {
-				return
-			}
-			defer ws.Close()
-			for {
-				//读取ws中的数据
-				mt, message, err := ws.ReadMessage()
-				if err != nil {
-					break
-				}
-				jsonMap := JSONToMap(string(message))
-				id, data, err := server.handleJsonRPCRequest(jsonMap)
-
-				infoMap := make(map[string]interface{})
-				if err != nil {
-					infoMap["jsonrpc"] = "2.0"
-					infoMap["error"] = err
-					infoMap["id"] = id
-				} else {
-					infoMap["jsonrpc"] = "2.0"
-					infoMap["id"] = id
-					infoMap["result"] = data
-				}
-				mjson, _ := json.Marshal(infoMap)
-				//写入ws数据
-				err = ws.WriteMessage(mt, mjson)
-				if err != nil {
-					break
-				}
-			}
-		}
-		asd, _ := perParseRequestData(r)
-		id, data, err := server.handleJsonRPCRequest(asd)
-		var infoDataJson = make(map[string]interface{})
-		if err != nil {
-			infoDataJson["jsonrpc"] = "2.0"
-			infoDataJson["error"] = err
-			infoDataJson["id"] = id
-			mjson, _ := json.Marshal(infoDataJson)
-			io.WriteString(w, string(mjson))
-			return
-		}
-		infoDataJson["jsonrpc"] = "2.0"
-		infoDataJson["id"] = id
-		infoDataJson["result"] = data
-		mjson, _ := json.Marshal(infoDataJson)
-		io.WriteString(w, string(mjson))
-	})
-	return http.ListenAndServe(addr, nil)
-}
-
-func JSONToMap(str string) map[string]interface{} {
-
-	var tempMap map[string]interface{}
-
-	err := json.Unmarshal([]byte(str), &tempMap)
-
+	resJson["jsonrpc"] = "2.0"
 	if err != nil {
-		panic(err)
+		resJson["id"] = nil
+		resJson["error"] = err
+		jsonInfo, _ := json.Marshal(resJson)
+		w.Write(jsonInfo)
+		return
 	}
+	id, datas, err := entity.common.HandleJsonRPCRequest(data)
 
-	return tempMap
+	resJson["id"] = id
+	if err != nil {
+		resJson["error"] = err
+		jsonInfo, _ := json.Marshal(resJson)
+		w.Write(jsonInfo)
+		return
+	}
+	resJson["result"] = datas
+	jsonInfo, _ := json.Marshal(resJson)
+	w.Write(jsonInfo)
+
+}
+func (server *ServerStarter) Run() error {
+
+	tempConfig := configs.GetConfig()
+	var err error
+	Path := tempConfig.Network.ListenHost + tempConfig.ListenPort
+
+	Common := RpcServer{common: server}
+	switch tempConfig.Network.ProtocolType {
+	case "ws":
+		ws := NewWsServer(Path, server)
+		ws.Start()
+	case "http":
+		http.Handle("/", Common)
+		err = http.ListenAndServe(Path, nil)
+	case "https":
+		http.Handle("/", Common)
+		http.ListenAndServeTLS(Path, tempConfig.Network.ServerCrt, tempConfig.Network.ServerKey, nil)
+	}
+	return err
 }
