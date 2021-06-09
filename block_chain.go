@@ -1,8 +1,11 @@
 package xblockchain
 
 import (
+	"errors"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"log"
+	"sync"
 	"xblockchain/storage/badger"
 	"xblockchain/uint256"
 )
@@ -10,6 +13,7 @@ import (
 type BlockChain struct {
 	lastBlockHash *uint256.UInt256
 	db *blockChainDB
+	writeLock sync.Mutex
 }
 
 type GenesisBlockOpts struct {
@@ -26,6 +30,7 @@ func DefaultGenesisBlockOpts() *GenesisBlockOpts {
 
 type blockChainDB struct {
 	storage *badger.Storage
+	writeLock sync.Mutex
 }
 
 func newBlockChainDB(storage *badger.Storage) *blockChainDB {
@@ -54,6 +59,8 @@ func (bcdb *blockChainDB) getBlockByHash(hash *uint256.UInt256) (*Block,error) {
 
 
 func (bcdb *blockChainDB) pushBlock(block *Block) error {
+	bcdb.writeLock.Lock()
+	defer bcdb.writeLock.Unlock()
 	hash := block.Hash
 	key := fmt.Sprintf("b%s",hash.Hex())
 	sb, err := block.Serialize()
@@ -103,6 +110,8 @@ func NewBlockChain(opts *GenesisBlockOpts,storage *badger.Storage) (*BlockChain,
 
 
 func (blockChain *BlockChain) AddBlock(txs []*Transaction) (*Block,error) {
+	blockChain.writeLock.Lock()
+	defer blockChain.writeLock.Unlock()
 	for _, tx := range txs {
 		if !blockChain.VerifyTransaction(tx) {
 			log.Panic("ERROR: Invalid transaction")
@@ -292,6 +301,50 @@ func (blockChain *BlockChain) GetBlockHashes(from int, count int) []uint256.UInt
 	return tmp
 }
 
+
+func (blockChain *BlockChain) InsertBatchBlock(blocks []*Block) (int, error){
+	index := 0
+	var err error = nil
+	for i, block := range blocks {
+		index = i
+		if err = blockChain.InsertBlock(block); err != nil{
+			break
+		}
+	}
+	return index, err
+}
+
+
+func (blockChain *BlockChain) InsertBlock(block *Block) error {
+	blockChain.writeLock.Lock()
+	defer blockChain.writeLock.Unlock()
+	if block == nil {
+		return errors.New("empty block")
+	}
+	if old, err := blockChain.GetBlockByHash(block.Hash); old != nil {
+		logrus.Info("block is exists!!!")
+		return nil
+	} else if err != nil {
+		return err
+	}
+	pow := NewProofOfWork(block)
+	if !pow.Validate() {
+		return errors.New("pow validate err")
+	}
+	txs := block.Transactions
+	for _, tx := range txs {
+		if !blockChain.VerifyTransaction(tx) {
+			return errors.New("verify transaction err")
+		}
+	}
+	if err := blockChain.db.pushBlock(block); err != nil {
+		logrus.Warnf("push block to db err: %s", err)
+		return err
+	}
+	blockChain.lastBlockHash = block.Hash
+	return nil
+}
+
 func (blockChain *BlockChain) FindTransaction(id *uint256.UInt256) (*Transaction,error) {
 	iterator := blockChain.Iterator()
 	if !iterator.HasNext() {
@@ -391,19 +444,5 @@ func (blockChain *BlockChain) GetBalanceOfAddress(address string) (uint64,error)
 	}
 	return balance,nil
 }
-
-
-//func (blockChain *BlockChain) GetTransaction(id string) (uint64,error) {
-//	pubKeyHash := ParsePubKeyHashByAddress(address)
-//	utxos,err := blockChain.FindUTXO(pubKeyHash)
-//	if err != nil {
-//		return 0, err
-//	}
-//	balance := uint64(0)
-//	for _, out := range utxos {
-//		balance += out.Value
-//	}
-//	return balance,nil
-//}
 
 

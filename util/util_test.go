@@ -58,3 +58,30 @@ func TestStartNodeAndBackend2(t *testing.T) {
 	}
 	select {}
 }
+
+func TestStartNodeAndBackend3(t *testing.T) {
+	var err error = nil
+	var stack *node.Node = nil
+	var back *backend.Backend = nil
+	if stack, err = node.New(&node.Opts{
+		P2PListenAddress: ":9005",
+		RPCListenAddress: ":9006",
+		P2PBootstraps: []string{
+			"127.0.0.1:9001",
+		},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if back, err = backend.NewBackend(stack, &backend.Opts{
+		BlockDbPath: "../data2/blocks",
+		KeyStoragePath: "../data2/keys",
+		Version: uint32(0),
+		Network: uint32(0),
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err = StartNodeAndBackend(stack,back); err != nil {
+		t.Fatal(err)
+	}
+	select {}
+}

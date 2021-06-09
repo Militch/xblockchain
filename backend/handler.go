@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/perlin-network/noise"
 	"github.com/sirupsen/logrus"
+	"sync"
 	"time"
 	"xblockchain"
 	"xblockchain/p2p"
@@ -29,7 +30,10 @@ type handler struct {
 	blockPackCh chan blockPack
 	peers map[noise.PublicKey] *peer
 	blockchain *xblockchain.BlockChain
-
+	syncLock sync.Mutex
+	fetchHashesLock sync.Mutex
+	fetchBlocksLock sync.Mutex
+	processLock sync.Mutex
 	version uint32
 	network uint32
 }
@@ -175,6 +179,8 @@ func (h *handler) basePeer() *peer {
 }
 
 func (h *handler) synchronise(p *peer) {
+	h.syncLock.Lock()
+	defer h.syncLock.Unlock()
 	logrus.Warnf("正在进行同步....")
 	if p == nil {
 		logrus.Warnf("未找到合适的同步链路")
@@ -287,6 +293,8 @@ func (h *handler) hashBlock(hash uint256.UInt256) bool {
 }
 
 func (h *handler) fetchHashes(p *peer, from uint64) error {
+	h.fetchHashesLock.Lock()
+	defer h.fetchHashesLock.Unlock()
 	go func() {
 		if err := p.RequestHashesFromNumber(from, MaxHashFetch); err != nil {
 			logrus.Warn("request hashes err")
@@ -315,6 +323,8 @@ func (h *handler) fetchHashes(p *peer, from uint64) error {
 }
 
 func (h *handler) fetchBlocks(p *peer) error {
+	h.fetchBlocksLock.Lock()
+	defer h.fetchBlocksLock.Unlock()
 	for {
 		select {
 		case pack := <-h.blockPackCh:
@@ -325,11 +335,24 @@ func (h *handler) fetchBlocks(p *peer) error {
 			if len(blocks) == 0 {
 				return nil
 			}
-			//TODO 处理数据
-			for _,block := range blocks {
-				logrus.Infof("handle fetch block: %s", block.Hash.Hex())
-			}
+			go h.process(blocks)
 		}
+	}
+}
+
+func (h *handler) process(blocks []xblockchain.Block) {
+	h.processLock.Lock()
+	defer h.processLock.Unlock()
+	coverRawBlocks := func(blocks []xblockchain.Block) []*xblockchain.Block {
+		tmp := make([]*xblockchain.Block, 0)
+		for _, block := range blocks {
+			tmp = append(tmp, &block)
+		}
+		return tmp
+	}
+	covered := coverRawBlocks(blocks)
+	if index, err := h.blockchain.InsertBatchBlock(covered); err != nil {
+		logrus.Warnf("process blocks[%d], hash: %s err: %s", index,blocks[index].Hash.Hex(), err)
 	}
 }
 

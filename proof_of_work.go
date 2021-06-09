@@ -37,10 +37,8 @@ func (proofOfWork ProofOfWork) PrepareData(nonce *uint256.UInt256) []byte{
 }
 
 func (proofOfWork ProofOfWork) Run() (*uint256.UInt256, *uint256.UInt256){
-	//block := proofOfWork.Block
 	nonce := uint256.NewUInt256Zero()
 	hashint := uint256.NewUInt256Zero()
-	//fmt.Printf("Mining the block containing \"%s\"\n", block.Data)
 	for nonce.Lt(uint256.NewUInt256Max()) {
 		data := proofOfWork.PrepareData(nonce)
 		hash := sha256.Sum256(data)
@@ -52,4 +50,12 @@ func (proofOfWork ProofOfWork) Run() (*uint256.UInt256, *uint256.UInt256){
 		}
 	}
 	return nonce,hashint
+}
+
+func (proofOfWork ProofOfWork) Validate() bool {
+	nonce := proofOfWork.Block.Nonce
+	data := proofOfWork.PrepareData(nonce)
+	hash := sha256.Sum256(data)
+	hashint := uint256.NewUInt256BS(hash[:])
+	return hashint.Lt(proofOfWork.Target)
 }

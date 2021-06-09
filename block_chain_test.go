@@ -21,7 +21,7 @@ func TestBlockChain_AddBlock(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for i :=0; i<5; i++ {
+	for i :=0; i<20; i++ {
 		tx, err := NewCoinBaseTransaction(gopt.Address,"")
 		if err != nil {
 			t.Fatal(err)
