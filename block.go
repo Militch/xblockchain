@@ -18,11 +18,11 @@ type Block struct {
 	Transactions []*Transaction `json:"transactions"`
 }
 
-func NewGenesisBlock(tx *Transaction) *Block {
-	return NewBlock(nil,[]*Transaction{tx})
+func NewGenesisBlock(tx *Transaction, t int64) *Block {
+	return NewBlockFromTime(nil,[]*Transaction{tx},t)
 }
 
-func NewBlock(prevBlock *Block, txs []*Transaction) *Block {
+func NewBlockFromTime(prevBlock *Block, txs []*Transaction, t int64) *Block {
 	height := uint64(0)
 	prevBlockHash := uint256.NewUInt256Zero()
 	if prevBlock != nil {
@@ -31,7 +31,7 @@ func NewBlock(prevBlock *Block, txs []*Transaction) *Block {
 	}
 	block := &Block{
 		Height: height,
-		Timestamp: time.Now().Unix(),
+		Timestamp: t,
 		HashPrevBlock: prevBlockHash,
 		Transactions: txs,
 	}
@@ -44,6 +44,12 @@ func NewBlock(prevBlock *Block, txs []*Transaction) *Block {
 	block.Hash = hash
 	fmt.Printf("mining block success height: %d, hash: %s, txcount: %d\n", block.Height,hash.Hex(),len(txs))
 	return block
+}
+
+
+
+func NewBlock(prevBlock *Block, txs []*Transaction) *Block {
+	return NewBlockFromTime(prevBlock, txs, time.Now().Unix())
 }
 
 func (block *Block) Serialize() ([]byte,error) {

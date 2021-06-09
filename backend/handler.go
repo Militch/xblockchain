@@ -64,6 +64,7 @@ func (h *handler) handle(p *peer) error {
 	if err = p.Handshake(head.Hash,head.Height ); err != nil {
 		return err
 	}
+	logrus.Infof("handshake success, peer.height: %d, p.head: %s", p.height, p.head)
 	id := p.p2p().ID
 	h.peers[id.ID] = p
 	defer delete(h.peers, id.ID)
@@ -81,6 +82,7 @@ func  (h *handler) handleMsg(p *peer) error {
 	case NewBlockMsg:
 		// 处理区块广播
 	case GetBlockHashesFromNumberMsg:
+		logrus.Infof("获取区块hashes消息")
 		// 获取本地区块 Hash 列表
 		bodyBs := msg.Body
 		var data *getBlockHashesFromNumberData = nil
@@ -88,13 +90,15 @@ func  (h *handler) handleMsg(p *peer) error {
 			logrus.Warnf("handle GetBlockHashesFromNumberMsg msg err: %s", err)
 			return err
 		}
+		hashes := h.blockchain.GetBlockHashes(int(data.From), int(data.Count))
 		// 发送本地hash值
-		if err := p.SendBlockHashes(nil); err != nil {
+		if err := p.SendBlockHashes(hashes); err != nil {
 			logrus.Warnf("send block hashes data err: %s", err)
 			return err
 		}
 	case BlockHashesMsg:
 		// 接受区块 hash 列表消息
+		logrus.Infof("接收区块hashes消息")
 		bodyBs := msg.Body
 		var data []uint256.UInt256 = nil
 		if err := json.Unmarshal(bodyBs,&data); err != nil {
@@ -106,6 +110,7 @@ func  (h *handler) handleMsg(p *peer) error {
 			hashes: data,
 		}
 	case GetBlocksMsg:
+		logrus.Infof("获取区块列表消息")
 		// 处理获取区块列表请求
 		bodyBs := msg.Body
 		var data []uint256.UInt256 = nil
@@ -113,12 +118,19 @@ func  (h *handler) handleMsg(p *peer) error {
 			logrus.Warnf("handle GetBlocksMsg msg err: %s", err)
 			return err
 		}
-		if err := p.SendBlocks(nil); err != nil {
+		blocks := make([]xblockchain.Block, 0)
+		for _, hash := range data {
+			if block,err := h.blockchain.GetBlockByHash(&hash); err == nil && block != nil {
+				blocks = append(blocks, *block)
+			}
+		}
+		if err := p.SendBlocks(blocks); err != nil {
 			logrus.Warnf("send blocks data err: %s", err)
 			return err
 		}
 	case BlocksMsg:
 		// 接受区块列表消息
+		logrus.Infof("接收区块列表消息")
 		bodyBs := msg.Body
 		var data []xblockchain.Block = nil
 		if err := json.Unmarshal(bodyBs,&data); err != nil {
@@ -163,7 +175,9 @@ func (h *handler) basePeer() *peer {
 }
 
 func (h *handler) synchronise(p *peer) {
+	logrus.Warnf("正在进行同步....")
 	if p == nil {
+		logrus.Warnf("未找到合适的同步链路")
 		return
 	}
 	var number uint64
@@ -171,6 +185,7 @@ func (h *handler) synchronise(p *peer) {
 	if number, err = h.findAncestor(p); err != nil {
 		return
 	}
+	logrus.Infof("获取到公共区块高度: %d", number)
 	go func() {
 		if err = h.fetchHashes(p, number + 1); err != nil {
 			logrus.Warn("fetch hashes err")
@@ -182,21 +197,21 @@ func (h *handler) synchronise(p *peer) {
 		}
 	}()
 }
-// 寻找共同父块
+// 寻找公共区块高度
 func (h *handler) findAncestor(p *peer) (uint64,error)  {
 	var err error = nil
 	var headBlock *xblockchain.Block = nil
 	if headBlock, err = h.blockchain.GetHeadBlock(); err != nil {
 		return 0,err
 	}
-	head := headBlock.Height
-	from := head - MaxHashFetch
+	head := int(headBlock.Height)
+	from := head - int(MaxHashFetch)
 	if from < 0 {
 		from = 0
 	}
-
+	logrus.Infof("寻找固定高度区间: [%d, %d]", from, MaxHashFetch)
 	// 获取区块hash列表
-	if err = p.RequestHashesFromNumber(from, MaxHashFetch); err != nil {
+	if err = p.RequestHashesFromNumber(uint64(from), MaxHashFetch); err != nil {
 		return 0,err
 	}
 	number := uint64(0)
@@ -213,27 +228,29 @@ func (h *handler) findAncestor(p *peer) (uint64,error)  {
 			if len(hashes) == 0 {
 				return 0, errors.New("empty hashes")
 			}
-
 			for i,hash := range hashes {
 				if h.hashBlock(hash) {
 					continue
 				}
 				// 记录高度与hash值
-				number = from + uint64(i)
+				number = uint64(from) + uint64(i)
 				haveHash = hash
 				break loop
 			}
 		}
 	}
+
 	if !haveHash.IsZero() {
 		return number, nil
 	}
+	logrus.Infof("未找到固定区间值，继续遍历查找...")
 	// 如果未找到固定区间值，遍历所有区块，二分查找
-	left := uint64(0)
-	right := head + 1
+	left := 0
+	right := int(MaxHashFetch) + 1
 	for left < right {
+		logrus.Infof("正在遍历查找高度区间: [%d, %d]", left, right)
 		mid := (left + right) / 2
-		if err = p.RequestHashesFromNumber(mid, 1); err != nil {
+		if err = p.RequestHashesFromNumber(uint64(mid), 1); err != nil {
 			return 0, err
 		}
 		for {
@@ -254,7 +271,7 @@ func (h *handler) findAncestor(p *peer) (uint64,error)  {
 			}
 		}
 	}
-	return left - 1, nil
+	return uint64(left) - 1, nil
 }
 // 寻找hash值是否在本地存在本地区块列表中
 func (h *handler) hashBlock(hash uint256.UInt256) bool {
@@ -288,8 +305,6 @@ func (h *handler) fetchHashes(p *peer, from uint64) error {
 			for _, hash := range hashes {
 				logrus.Infof("handle fetch hash: %s", hash.Hex())
 			}
-			// TODO: 处理数据
-			// 请求获取区块
 			go func() {
 				if err := p.RequestBlocks(hashes); err != nil {
 					logrus.Warn("request blocks err")

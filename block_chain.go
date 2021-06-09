@@ -14,13 +14,13 @@ type BlockChain struct {
 
 type GenesisBlockOpts struct {
 	Address string
-	Echo string
+	Time int64
 }
 
 func DefaultGenesisBlockOpts() *GenesisBlockOpts {
 	return &GenesisBlockOpts{
 		Address: "15MG8A1XBryHWjtoe8W6iohdeqSBZy3DXPMNYfPSUJi6b",
-		Echo: "Hello, world",
+		Time: 1623213337,
 	}
 }
 
@@ -83,7 +83,7 @@ func NewBlockChain(opts *GenesisBlockOpts,storage *badger.Storage) (*BlockChain,
 		if err != nil {
 			return nil, err
 		}
-		genesis := NewGenesisBlock(tx)
+		genesis := NewGenesisBlock(tx,opts.Time)
 		genesisHash = genesis.Hash
 		err = db.pushBlock(genesis)
 		if err != nil {
@@ -276,6 +276,20 @@ func (blockChain *BlockChain) FindUTXO(pubKeyHash []byte) ([]*TransactionOutput,
 		}
 	}
 	return UTXOs,err
+}
+func (blockChain *BlockChain) GetBlockHashes(from int, count int) []uint256.UInt256 {
+	if from < 0 || count <= 0 {
+		return nil
+	}
+	tmp := make([]uint256.UInt256, 0)
+	for i := from; i < from + count; i++ {
+		block, err := blockChain.GetBlockById(uint64(i))
+		if err != nil {
+			break
+		}
+		tmp = append(tmp, *block.Hash)
+	}
+	return tmp
 }
 
 func (blockChain *BlockChain) FindTransaction(id *uint256.UInt256) (*Transaction,error) {

@@ -126,3 +126,21 @@ func TestBlockChain_GetBlockById(t *testing.T) {
 		fmt.Println()
 	}
 }
+
+func TestBlockChain_GetBlockHashes(t *testing.T) {
+	storage := badger.New("./data0/blocks")
+	defer func() {
+		if err := storage.Close(); err != nil {
+			t.Fatalf("Sotrage close errors: %s", err)
+		}
+	}()
+	gopt := DefaultGenesisBlockOpts()
+	bc,err := NewBlockChain(gopt, storage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hashes := bc.GetBlockHashes(0,10)
+	for i, hash := range hashes {
+		t.Logf("hash[%d]: %s\n", i, hash.Hex())
+	}
+}

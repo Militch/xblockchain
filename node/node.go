@@ -1,6 +1,7 @@
 package node
 
 import (
+	"github.com/sirupsen/logrus"
 	"log"
 	"xblockchain"
 	"xblockchain/api"
@@ -40,10 +41,12 @@ func (n *Node) Start() error {
 	if err := n.p2pServer.Start(); err != nil {
 		return err
 	}
-	if err := n.RPCStarter.Run(
-		n.Opts.RPCListenAddress); err != nil {
-		return err
-	}
+	go func() {
+		if err := n.RPCStarter.Run(
+			n.Opts.RPCListenAddress); err != nil {
+			logrus.Warnf("启动 RPC ERR: %s", err)
+		}
+	}()
 	return nil
 }
 

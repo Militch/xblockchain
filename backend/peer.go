@@ -115,7 +115,7 @@ func (p *peer) RequestBlocks(hashes []uint256.UInt256) error {
 	return nil
 }
 // SendBlocks 发送区块列表
-func (p *peer) SendBlocks(blocks []*xblockchain.Block) error {
+func (p *peer) SendBlocks(blocks []xblockchain.Block) error {
 	if err := p2p.SendMsgJSONData(p.p2pPeer,BlocksMsg ,&blocks); err != nil {
 		return err
 	}

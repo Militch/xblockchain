@@ -23,3 +23,7 @@ func TestSimple(t *testing.T) {
 	}
 	t.Logf("find target: %d", data[left - 1])
 }
+
+func TestHandler_Start(t *testing.T) {
+
+}
