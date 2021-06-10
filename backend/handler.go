@@ -361,9 +361,26 @@ func (h *handler) process(blocks []xblockchain.Block) {
 	}
 }
 
+func (h *handler) txBroadcastLoop() {
 
+}
+
+func (h *handler) minedBroadcastLoop() {
+
+}
+
+func (h *handler) txSyncLoop() {
+
+}
 
 func (h *handler) Start() {
+	// 启动交易广播
+	go h.txBroadcastLoop()
+	// 启动区块广播
+	go h.minedBroadcastLoop()
+	// 启动区块同步
 	go h.syncer()
+	// 启动交易同步
+	go h.txSyncLoop()
 }
 
