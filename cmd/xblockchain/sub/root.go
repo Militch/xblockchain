@@ -2,9 +2,12 @@ package sub
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
+	configs "xblockchain/cmd/config"
+
+	"github.com/spf13/cobra"
 )
+
 //
 //var (
 //	RPCListenAddress = ":9002"
@@ -16,16 +19,17 @@ import (
 //	ProtocolVersion = uint32(0)
 //	NetworkID = uint32(0)
 //)
-var (
-	RPCListenAddress = ":9004"
-	ClientAPIAddress = "http://127.0.0.1:9004"
-	P2PListenAddress = ":9003"
-	BlockDbPath = "./data1/blocks"
-	KeyStoragePath = "./data1/keys"
-	P2PBootstraps = []string{"127.0.0.1:9001"}
-	ProtocolVersion = uint32(0)
-	NetworkID = uint32(0)
-)
+// var (
+// 	RPCListenAddress = ":9004"
+// 	ClientAPIAddress = "http://127.0.0.1:9004"
+// 	P2PListenAddress = ":9003"
+// 	BlockDbPath      = "./data1/blocks"
+// 	KeyStoragePath   = "./data1/keys"
+// 	P2PBootstraps    = []string{"127.0.0.1:9001"}
+// 	ProtocolVersion  = uint32(0)
+// 	NetworkID        = uint32(0)
+// )
+
 //var (
 //	RPCListenAddress = ":9006"
 //	ClientAPIAddress = "http://127.0.0.1:9006"
@@ -37,9 +41,9 @@ var (
 //	NetworkID = uint32(1)
 //)
 var (
-	cfgFile     string
+	cfgFile string
 	rootCmd = &cobra.Command{
-		Use:   "fixcoin",
+		Use: "fixcoin",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
@@ -48,7 +52,7 @@ var (
 		},
 	}
 	getCommand = &cobra.Command{
-		Use:   "get <command> [flags]",
+		Use: "get <command> [flags]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
@@ -62,9 +66,10 @@ func Execute() {
 	}
 }
 
+func GetConfigSub() configs.ConfigInfo {
+	return configs.GetConfig()
+}
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 	rootCmd.AddCommand(getCommand)
 }
-
-

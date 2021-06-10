@@ -2,13 +2,14 @@ package sub
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"xblockchain/rpc"
+
+	"github.com/spf13/cobra"
 )
 
 var (
 	minerCommand = &cobra.Command{
-		Use:   "miner",
+		Use: "miner",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) == 0 {
 				return cmd.Help()
@@ -17,19 +18,19 @@ var (
 		},
 	}
 	minerStartCommand = &cobra.Command{
-		Use:   "start",
+		Use:  "start",
 		RunE: runMinerStart,
 	}
 	minerStopCommand = &cobra.Command{
-		Use:   "stop",
+		Use:  "stop",
 		RunE: runMinerStop,
 	}
 )
 
 func runMinerStart(_ *cobra.Command, _ []string) error {
-	cli := rpc.NewClient(ClientAPIAddress)
+	cli := rpc.NewClient(GetConfigSub().Network.ClientAPIAddress)
 	var r *interface{} = nil
-	err := cli.CallMethod(1,"Miner.Start",nil,&r)
+	err := cli.CallMethod(1, "Miner.Start", nil, &r)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
@@ -39,9 +40,9 @@ func runMinerStart(_ *cobra.Command, _ []string) error {
 }
 
 func runMinerStop(_ *cobra.Command, _ []string) error {
-	cli := rpc.NewClient(ClientAPIAddress)
+	cli := rpc.NewClient(GetConfigSub().Network.ClientAPIAddress)
 	var r *interface{} = nil
-	err := cli.CallMethod(1,"Miner.Stop",nil,&r)
+	err := cli.CallMethod(1, "Miner.Stop", nil, &r)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil

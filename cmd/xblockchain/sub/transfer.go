@@ -3,20 +3,21 @@ package sub
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/spf13/cobra"
 	"xblockchain"
 	"xblockchain/api"
 	"xblockchain/rpc"
+
+	"github.com/spf13/cobra"
 )
 
 var (
 	transferCommand = &cobra.Command{
-		Use:   "transfer [from] <to> <value>",
+		Use:  "transfer [from] <to> <value>",
 		RunE: runTransfer,
 	}
 )
 
-func runTransfer(cmd *cobra.Command,args []string) error {
+func runTransfer(cmd *cobra.Command, args []string) error {
 	if len(args) == 0 || len(args) < 2 || len(args) > 3 {
 		return cmd.Help()
 	}
@@ -28,24 +29,24 @@ func runTransfer(cmd *cobra.Command,args []string) error {
 		fromAddr = ""
 		toAddr = args[0]
 		value = args[1]
-	}else {
+	} else {
 		fromAddr = args[0]
 		toAddr = args[1]
 		value = args[2]
 	}
 	arg := &api.SendTransactionArg{
-		From: fromAddr,
-		To: toAddr,
+		From:  fromAddr,
+		To:    toAddr,
 		Value: value,
 	}
-	cli := rpc.NewClient(ClientAPIAddress)
+	cli := rpc.NewClient(GetConfigSub().Network.ClientAPIAddress)
 	var r *xblockchain.Transaction = nil
-	err := cli.CallMethod(1,"Transaction.SendTransaction",arg,&r)
+	err := cli.CallMethod(1, "Transaction.SendTransaction", arg, &r)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
 	}
-	jsonbyte,err := json.Marshal(*r)
+	jsonbyte, err := json.Marshal(*r)
 	if err != nil {
 		fmt.Println(err.Error())
 		return nil
