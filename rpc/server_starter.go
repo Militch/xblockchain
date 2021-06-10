@@ -269,17 +269,17 @@ func (server *ServerStarter) Run() error {
 
 	tempConfig := configs.GetConfig()
 	var err error
-	Path := tempConfig.Network.ListenHost + tempConfig.ListenPort
+	Path := tempConfig.Network.ProtocolType + tempConfig.Network.RPCListenAddress
 
 	Common := RpcServer{common: server}
 	switch tempConfig.Network.ProtocolType {
-	case "ws":
+	case "ws://":
 		ws := NewWsServer(Path, server)
 		ws.Start()
-	case "http":
+	case "http://":
 		http.Handle("/", Common)
 		err = http.ListenAndServe(Path, nil)
-	case "https":
+	case "https://":
 		http.Handle("/", Common)
 		http.ListenAndServeTLS(Path, tempConfig.Network.ServerCrt, tempConfig.Network.ServerKey, nil)
 	}

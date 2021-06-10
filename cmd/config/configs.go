@@ -11,16 +11,20 @@ type ConfigInfo struct {
 }
 
 type Network struct {
-	ProtocolType string
-	ListenHost   string
-	ListenPort   string
-	ServerCrt    string
-	ServerKey    string
+	ProtocolType     string
+	RPCListenAddress string
+	ClientAPIAddress string
+	P2PListenAddress string
+	P2PBootstraps    []string
+	ProtocolVersion  uint32
+	NetworkID        uint32
+	ServerCrt        string
+	ServerKey        string
 }
 
 type Blockchain struct {
-	Keys   string
-	Blocks string
+	BlockDbPath    string
+	KeyStoragePath string
 }
 
 var Configinfos ConfigInfo
@@ -32,14 +36,19 @@ func init() {
 	if err != nil {
 		log.Errorf("Fatal error config file: %s \n", err)
 	}
-	Configinfos.Network.ProtocolType = viper.GetString("network.protocol_type")
-	Configinfos.Network.ListenHost = viper.GetString("network.listen_host")
-	Configinfos.Network.ListenPort = viper.GetString("network.listen_port")
-	Configinfos.Network.ServerCrt = viper.GetString("network.server_crt")
-	Configinfos.Network.ServerKey = viper.GetString("network.server_key")
 
-	Configinfos.Blockchain.Keys = viper.GetString("blockchain.keys")
-	Configinfos.Blockchain.Blocks = viper.GetString("blockchain.blocks")
+	Configinfos.Network.ProtocolType = viper.GetString("network.protocol_type")
+	Configinfos.Network.RPCListenAddress = viper.GetString("network.RPCListenAddress")
+	Configinfos.Network.ClientAPIAddress = viper.GetString("network.ClientAPIAddress")
+	Configinfos.Network.P2PListenAddress = viper.GetString("network.P2PListenAddress")
+	Configinfos.Network.ProtocolVersion = viper.GetUint32("network.ProtocolVersion")
+	Configinfos.Network.P2PBootstraps = viper.GetStringSlice("network.P2PBootstraps")
+	Configinfos.Network.NetworkID = viper.GetUint32("network.NetworkID")
+	Configinfos.Network.ServerCrt = viper.GetString("network.server_crt")
+	Configinfos.Network.ServerCrt = viper.GetString("network.server_key")
+
+	Configinfos.Blockchain.BlockDbPath = viper.GetString("blockchain.BlockDbPath")
+	Configinfos.Blockchain.KeyStoragePath = viper.GetString("blockchain.KeyStoragePath")
 }
 func GetConfig() ConfigInfo {
 	return Configinfos
