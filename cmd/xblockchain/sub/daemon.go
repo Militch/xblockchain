@@ -21,19 +21,10 @@ func runDaemon() error {
 	var err error = nil
 	var stack *node.Node = nil
 	var back *backend.Backend = nil
-	if stack, err = node.New(&node.Opts{
-		P2PListenAddress: GetConfigSub().Network.P2PListenAddress,
-		P2PBootstraps:    GetConfigSub().Network.P2PBootstraps,
-		RPCListenAddress: GetConfigSub().Network.RPCListenAddress,
-	}); err != nil {
+	if stack, err = node.New(); err != nil {
 		return err
 	}
-	if back, err = backend.NewBackend(stack, &backend.Opts{
-		BlockDbPath:    GetConfigSub().Blockchain.BlockDbPath,
-		KeyStoragePath: GetConfigSub().Blockchain.KeyStoragePath,
-		Version:        GetConfigSub().Network.ProtocolVersion,
-		Network:        GetConfigSub().Network.NetworkID,
-	}); err != nil {
+	if back, err = backend.NewBackend(stack); err != nil {
 		return err
 	}
 	if err = util.StartNodeAndBackend(stack, back); err != nil {
