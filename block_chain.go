@@ -318,14 +318,13 @@ func (blockChain *BlockChain) InsertBatchBlock(blocks []*Block) (int, error){
 func (blockChain *BlockChain) InsertBlock(block *Block) error {
 	blockChain.writeLock.Lock()
 	defer blockChain.writeLock.Unlock()
+	logrus.Infof("block insert to db by hash: %s", block.Hash.Hex())
 	if block == nil {
 		return errors.New("empty block")
 	}
-	if old, err := blockChain.GetBlockByHash(block.Hash); old != nil {
-		logrus.Info("block is exists!!!")
+	if old, _ := blockChain.GetBlockByHash(block.Hash); old != nil {
+		logrus.Infof("block is exists hash: %s", block.Hash.Hex())
 		return nil
-	} else if err != nil {
-		return err
 	}
 	pow := NewProofOfWork(block)
 	if !pow.Validate() {
@@ -341,6 +340,7 @@ func (blockChain *BlockChain) InsertBlock(block *Block) error {
 		logrus.Warnf("push block to db err: %s", err)
 		return err
 	}
+	logrus.Infof("save db by hash: %s success", block.Hash.Hex())
 	blockChain.lastBlockHash = block.Hash
 	return nil
 }

@@ -65,10 +65,10 @@ func (h *handler) handle(p *peer) error {
 	if head, err = h.blockchain.GetHeadBlock(); err != nil {
 		return err
 	}
-	if err = p.Handshake(head.Hash,head.Height ); err != nil {
+	if err = p.Handshake(head.Hash,head.Height); err != nil {
 		return err
 	}
-	logrus.Infof("handshake success, peer.height: %d, p.head: %s", p.height, p.head)
+	logrus.Infof("handshake success, peer.height: %d, p.head: %s", p.height, p.head.Hex())
 	id := p.p2p().ID
 	h.peers[id.ID] = p
 	defer delete(h.peers, id.ID)
@@ -86,7 +86,6 @@ func  (h *handler) handleMsg(p *peer) error {
 	case NewBlockMsg:
 		// 处理区块广播
 	case GetBlockHashesFromNumberMsg:
-		logrus.Infof("获取区块hashes消息")
 		// 获取本地区块 Hash 列表
 		bodyBs := msg.Body
 		var data *getBlockHashesFromNumberData = nil
@@ -102,7 +101,6 @@ func  (h *handler) handleMsg(p *peer) error {
 		}
 	case BlockHashesMsg:
 		// 接受区块 hash 列表消息
-		logrus.Infof("接收区块hashes消息")
 		bodyBs := msg.Body
 		var data []uint256.UInt256 = nil
 		if err := json.Unmarshal(bodyBs,&data); err != nil {
@@ -114,7 +112,6 @@ func  (h *handler) handleMsg(p *peer) error {
 			hashes: data,
 		}
 	case GetBlocksMsg:
-		logrus.Infof("获取区块列表消息")
 		// 处理获取区块列表请求
 		bodyBs := msg.Body
 		var data []uint256.UInt256 = nil
@@ -134,7 +131,6 @@ func  (h *handler) handleMsg(p *peer) error {
 		}
 	case BlocksMsg:
 		// 接受区块列表消息
-		logrus.Infof("接收区块列表消息")
 		bodyBs := msg.Body
 		var data []xblockchain.Block = nil
 		if err := json.Unmarshal(bodyBs,&data); err != nil {
@@ -346,7 +342,16 @@ func (h *handler) process(blocks []xblockchain.Block) {
 	coverRawBlocks := func(blocks []xblockchain.Block) []*xblockchain.Block {
 		tmp := make([]*xblockchain.Block, 0)
 		for _, block := range blocks {
-			tmp = append(tmp, &block)
+			logrus.Infof("cover block: %s", block.Hash.Hex())
+			b := &xblockchain.Block{
+				Height: block.Height,
+				Timestamp: block.Timestamp,
+				HashPrevBlock: block.HashPrevBlock,
+				Nonce: block.Nonce,
+				Hash: block.Hash,
+				Transactions: block.Transactions,
+			}
+			tmp = append(tmp, b)
 		}
 		return tmp
 	}
@@ -355,6 +360,7 @@ func (h *handler) process(blocks []xblockchain.Block) {
 		logrus.Warnf("process blocks[%d], hash: %s err: %s", index,blocks[index].Hash.Hex(), err)
 	}
 }
+
 
 
 func (h *handler) Start() {

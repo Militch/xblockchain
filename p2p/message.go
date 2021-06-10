@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
 )
 
 var MsgCodePing = uint32(1)
@@ -99,7 +98,6 @@ func SendMsgJSONData(peer *Peer, msgCode uint32, data interface{}) error {
 	if msgBs, err = msg.MarshalMsg(); err != nil {
 		return err
 	}
-	logrus.Warnf("send msg json data: %s", string(msgBs))
 	peer.sendData(msgBs)
 	return nil
 }
